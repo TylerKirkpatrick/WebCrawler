@@ -130,6 +130,7 @@ class Spider:
 		except Exception as e:
 			Spider.broken_links.add(page_url)
 			Spider.update_files()
+			print("Found broken link: ", page_url)
 			print("ERROR: " + str(e))
 			return set()
 		return finder.page_links()
@@ -179,7 +180,13 @@ class Spider:
 			if url in Spider.crawled:
 				continue
 			if Spider.domain_name != get_domain_name(url):
-				#make sure you stay in the domain name (lyle.smu.edu/~fmoore)				
+				#make sure you stay in the domain name (lyle.smu.edu/~fmoore)	
+
+				#add to out_going_links.txt		
+				with open('out_going_links.txt', 'a') as out:
+					out.write(url + '\n')
+				out.close()
+
 				continue
 			#below checks to see if content is allowed to be crawled
 			tempUrl = url.replace('http://lyle.smu.edu/~fmoore', '')	

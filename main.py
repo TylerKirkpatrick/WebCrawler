@@ -22,6 +22,10 @@ NUMBER_OF_THREADS = 4
 #thread queue
 queue = Queue()
 try:
+    os.remove('out_going_links.txt')
+except:
+    pass
+try:
     os.remove('output_html.txt')
 except:
     pass
@@ -83,7 +87,7 @@ def crawl():
             if(docIDDict[key] != [] and key not in keys_to_delete):
                 for key_to_compare in docIDDict:
                     if(key != key_to_compare and docIDDict[key] == docIDDict[key_to_compare] and key_to_compare not in keys_to_delete):
-                        print("DUPLICATE URL FOUND:")
+                        print("DUPLICATE CONTENT FOUND:")
                         #print(key)
                         #print(key_to_compare)
                         keys_to_delete.append(key_to_compare)
@@ -91,7 +95,7 @@ def crawl():
 
         #delete duplicate keys
         for todelete in keys_to_delete:
-            #print("DELETING: " + todelete)
+            print("DELETING: " + todelete)
             docIDDict.pop(todelete, None)
 
         #make dict of individual words: frequency
@@ -114,7 +118,7 @@ def crawl():
         for k in range(len(sorted_term_frequency)):
             #loop thru each document to see if the term_key is present
             for document_key in docIDDict:
-                print("NEW DOC!", docIDDict[document_key])
+                #print("NEW DOC!", docIDDict[document_key])
                 #loop thru each word in the doc
                 for word in docIDDict[document_key]:
                     if(word == sorted_term_frequency[k][0]):
