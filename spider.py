@@ -7,9 +7,13 @@ try:
 except:
 	import robotparser
 
+from bs4 import BeautifulSoup as soup
+
 from link_finder import LinkFinder
 from domain import *
 from general import *
+
+import re
 
 #grabs a link, grabs html, passes to linkFinder
 class Spider:
@@ -27,8 +31,12 @@ class Spider:
 	queue = set()
 	crawled = set()
 	broken_links = set()
+	num_crawled = 0
+	stopwords = []
 
-	def __init__(self, project_name, base_url, domain_name):
+	page_dict = {} #keep a dictionary of page_url : [parsed words]
+
+	def __init__(self, project_name, base_url, domain_name, num_pages_to_crawl):
 		#shared information
 		Spider.project_name = project_name
 		Spider.base_url = base_url
@@ -36,6 +44,13 @@ class Spider:
 		Spider.queue_file = Spider.project_name + '/queue.txt'
 		Spider.crawled_file = Spider.project_name + '/crawled.txt'
 		Spider.broken_links_file = Spider.project_name + '/broken_links.txt'
+		Spider.num_pages_to_crawl = num_pages_to_crawl
+		Spider.num_crawled = 0
+		
+		#read stopwords into array
+		stopwordsfile = open("stopwords.txt", "r")
+		Spider.stopwords = stopwordsfile.read().split('\n')
+
 		self.boot()
 		self.crawl_page('First spider', Spider.base_url)
 
@@ -56,6 +71,7 @@ class Spider:
 			print('Queue ' + str(len(Spider.queue)) + ' | crawled ' + str(len(Spider.crawled)))
 			
 			Spider.add_links_to_queue(Spider.gather_links(page_url)) #add links to waiting list	
+				
 			Spider.queue.remove(page_url) #remove page you just crawled
 			Spider.crawled.add(page_url) #move to crawl list
 
@@ -67,9 +83,35 @@ class Spider:
 		html_string = ''
 		try:
 			response = urlopen(page_url)
-			if 'text/html' in response.getheader('Content-Type'):
+
+			Spider.page_dict[page_url] = []
+
+			if 'text/html' in response.getheader('Content-Type') or 'text/htm' in response.getheader('Content-Type'):
 				html_bytes = response.read() # receive byte data
 				html_string = html_bytes.decode("utf-8")
+				
+				#html data
+				web_soup = soup(html_string, "html.parser")
+				main_div = web_soup.find(name="p", attrs={'class': 'main-content'})
+				#print(web_soup.get_text())
+				words = web_soup.get_text().split() 
+				
+				Spider.addToDict(page_url, words, 'output_html.txt')
+						
+
+			elif 'text/plain' in response.getheader('Content-Type'):
+				html_bytes = response.read() # receive byte data
+				html_string = html_bytes.decode("utf-8")
+				
+				#html data
+				web_soup = soup(html_string, "html.parser")
+				#print(web_soup.get_text())
+				words = web_soup.get_text().split() 
+				
+				Spider.addToDict(page_url, words, 'output_txt.txt')
+			else:
+				print("RESPONSE: " + response.getheader('Content-Type'))
+
 			
 			finder = LinkFinder(Spider.base_url, page_url)
 			finder.feed(html_string)
@@ -81,6 +123,28 @@ class Spider:
 			return set()
 		return finder.page_links()
 
+	@classmethod
+	def addToDict(self, page_url, data, filename):
+		with open(filename, 'a') as out:
+			for word in data:
+				#print(word)
+				#out.write(web_soup.get_text() + '\n')
+				try:
+					trimmed = re.match("^[a-zA-Z\-\']+$", word)
+					toCheck = trimmed[0].lower().rstrip()
+					#print("TRIMMED: ", trimmed[0])
+					for sw in Spider.stopwords:
+						sw_fixed = sw.lower().rstrip() #convert to lowercase and remove trailing whitespace
+						if toCheck == sw_fixed:
+							break
+						elif sw == Spider.stopwords[-1]:
+							print("WRITING: " + toCheck)
+							Spider.page_dict[page_url].append(toCheck)
+							out.write(toCheck + '\n')
+
+				except:
+					print("NOT A WORD!")
+	
 	@staticmethod
 	def add_links_to_queue(links):
 		for url in links:
@@ -97,7 +161,11 @@ class Spider:
 			if(allowed_var != True):
 				print("In an illegal area")
 				continue
-			Spider.queue.add(url)
+			
+			if Spider.num_pages_to_crawl > Spider.num_crawled + 1:
+				Spider.num_crawled += 1
+				Spider.queue.add(url)
+
 
 	@staticmethod
 	def update_files():

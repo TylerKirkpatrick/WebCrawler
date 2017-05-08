@@ -6,6 +6,8 @@ except:
 from spider import Spider
 from domain import *
 from general import *
+import os
+import shutil
 
 PROJECT_NAME = 'IR_project'
 #HOMEPAGE = 'https://thenewboston.com/'
@@ -17,8 +19,27 @@ NUMBER_OF_THREADS = 4
 
 #thread queue
 queue = Queue()
+try:
+    os.remove('output_html.txt')
+except:
+    pass
+try:
+    os.remove('output_txt.txt')
+except:
+    pass
+try:
+    shutil.rmtree(PROJECT_NAME)
+except:
+    pass
 
-Spider(PROJECT_NAME, HOMEPAGE, DOMAIN_NAME)
+print("How many pages would you like to crawl? (leave blank to crawl all)")
+num_pages_to_crawl = input()
+if(num_pages_to_crawl == '' or num_pages_to_crawl == ' '):
+    num_pages_to_crawl = 100
+else:
+    num_pages_to_crawl = int(num_pages_to_crawl)
+
+Spider(PROJECT_NAME, HOMEPAGE, DOMAIN_NAME, num_pages_to_crawl)
 
 # Create worker threads (will die when main exits)
 def create_workers():
