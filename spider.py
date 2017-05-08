@@ -72,8 +72,8 @@ class Spider:
 	@staticmethod
 	def crawl_page(thread_name, page_url):
 		if page_url not in Spider.crawled:
-			print(thread_name + ' crawling ' + page_url)
-			print('Queue ' + str(len(Spider.queue)) + ' | crawled ' + str(len(Spider.crawled)))
+			#print(thread_name + ' crawling ' + page_url)
+			#print('Queue ' + str(len(Spider.queue)) + ' | crawled ' + str(len(Spider.crawled)))
 			
 			Spider.add_links_to_queue(Spider.gather_links(page_url)) #add links to waiting list	
 				
@@ -92,6 +92,7 @@ class Spider:
 			Spider.page_dict[page_url] = []
 
 			if 'text/html' in response.getheader('Content-Type') or 'text/htm' in response.getheader('Content-Type'):
+				print("URL: ", page_url)
 				html_bytes = response.read() # receive byte data
 				html_string = html_bytes.decode("utf-8")
 				
@@ -118,7 +119,8 @@ class Spider:
 				#print("RESPONSE: " + response.getheader('Content-Type'))
 				if 'image/' in response.getheader('Content-Type') or 'images/' in response.getheader('Content-Type') or 'application/pdf' in response.getheader('Content-Type'):
 					Spider.num_graphics_files += 1
-					print("images: " + str(Spider.num_graphics_files))
+					#print("images: " + str(Spider.num_graphics_files))
+				
 
 			
 			#check for prev. seen content
@@ -130,8 +132,8 @@ class Spider:
 		except Exception as e:
 			Spider.broken_links.add(page_url)
 			Spider.update_files()
-			print("Found broken link: ", page_url)
-			print("ERROR: " + str(e))
+			#print("Found broken link: ", page_url)
+			#print("ERROR: " + str(e))
 			return set()
 		return finder.page_links()
 
@@ -142,7 +144,7 @@ class Spider:
 				#print(word)
 				#out.write(web_soup.get_text() + '\n')
 				try:
-					trimmed = re.match("^[a-zA-Z\-\']+$", word)
+					trimmed = re.match("^[0-9a-zA-Z\-\']+$", word)
 					toCheck = trimmed[0].lower().rstrip()
 					#print("TRIMMED: ", trimmed[0])
 					for sw in Spider.stopwords:

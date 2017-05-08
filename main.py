@@ -75,7 +75,7 @@ def create_jobs():
 def crawl():
     queued_links = file_to_set(QUEUE_FILE)
     if len(queued_links) > 0:
-        print(str(len(queued_links)) + ' links in the queue')
+        #print(str(len(queued_links)) + ' links in the queue')
         create_jobs()
     else:
         #print("DONE")
@@ -87,7 +87,7 @@ def crawl():
             if(docIDDict[key] != [] and key not in keys_to_delete):
                 for key_to_compare in docIDDict:
                     if(key != key_to_compare and docIDDict[key] == docIDDict[key_to_compare] and key_to_compare not in keys_to_delete):
-                        print("DUPLICATE CONTENT FOUND:")
+                        #print("DUPLICATE CONTENT FOUND:")
                         #print(key)
                         #print(key_to_compare)
                         keys_to_delete.append(key_to_compare)
@@ -95,7 +95,7 @@ def crawl():
 
         #delete duplicate keys
         for todelete in keys_to_delete:
-            print("DELETING: " + todelete)
+            #print("DELETING: " + todelete)
             docIDDict.pop(todelete, None)
 
         #make dict of individual words: frequency
@@ -112,8 +112,11 @@ def crawl():
         sorted_term_frequency = sorted(word_dict.items(), key=operator.itemgetter(1), reverse=True)
         #print(sorted_term_frequency)
 
+        #keep track of term: document freq.
+
         #Make a dict of term: document frequency
         tdf = {}
+
         #loop thru every word in the sorted_term_freq array
         for k in range(len(sorted_term_frequency)):
             #loop thru each document to see if the term_key is present
@@ -122,14 +125,49 @@ def crawl():
                 #loop thru each word in the doc
                 for word in docIDDict[document_key]:
                     if(word == sorted_term_frequency[k][0]):
-                        if sorted_term_frequency[k][0] in tdf:
-                            tdf[sorted_term_frequency[k][0]] += 1
+                        if word in tdf:
+                            tdf[word] += 1
                         else:
-                            tdf[sorted_term_frequency[k][0]] = 1
+                            #tdf[word] = [document_key]
+                            tdf[word] = 1
+                    
+                       
+                        
                         #break because we are just counting the number of DOCUMENTS that the term is found in...
-                        break
+                        
 
-        #print("TDF: " , tdf)
+        #sorted_tdf = sorted(tdf.values(), key=len, reverse=True)
+        sorted_tdf = sorted(tdf.items(), key=operator.itemgetter(1), reverse= True)
+
+        #print(sorted_tdf)
+        
+        counter = 0
+        for i in sorted_tdf:
+            if counter < 20:
+                print(i)
+                counter += 1
+            else:
+                break
+
+        #NOW FOR QUERY
+        to_stop = 0
+
+        while to_stop == 0:
+            hitList = []
+            hitListTitle = []
+            print("Enter a query!")
+            query = input("-->" )
+            query = query.lower()
+            if query == "stop":
+                to_stop = 1
+                continue
+            
+            
+            for word in word_dict:
+                if query == word:
+                    print("FOUND IT")
+
+
 
 create_workers()
 crawl()
