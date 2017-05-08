@@ -14,13 +14,15 @@ from domain import *
 from general import *
 
 import re
+import string
+from stemmer import PorterStemmer
 
 #grabs a link, grabs html, passes to linkFinder
 class Spider:
 	rp = urllib.robotparser.RobotFileParser()
 	rp.set_url("http://lyle.smu.edu/~fmoore/robots.txt")
 	rp.read()
-	print(rp.can_fetch("*", "/dontgohere/"))
+	#print(rp.can_fetch("*", "/dontgohere/"))
 	#class var: shared among all instances
 	project_name = ''
 	base_url = ''
@@ -33,6 +35,8 @@ class Spider:
 	broken_links = set()
 	num_crawled = 0
 	stopwords = []
+	num_graphics_files = 0 #jpg, jpeg, png, PDF(?), gif
+	p = 0
 
 	page_dict = {} #keep a dictionary of page_url : [parsed words]
 
@@ -46,10 +50,11 @@ class Spider:
 		Spider.broken_links_file = Spider.project_name + '/broken_links.txt'
 		Spider.num_pages_to_crawl = num_pages_to_crawl
 		Spider.num_crawled = 0
-		
+		Spider.num_graphics_files = 0
 		#read stopwords into array
 		stopwordsfile = open("stopwords.txt", "r")
 		Spider.stopwords = stopwordsfile.read().split('\n')
+		Spider.p = PorterStemmer()
 
 		self.boot()
 		self.crawl_page('First spider', Spider.base_url)
@@ -110,7 +115,13 @@ class Spider:
 				
 				Spider.addToDict(page_url, words, 'output_txt.txt')
 			else:
-				print("RESPONSE: " + response.getheader('Content-Type'))
+				#print("RESPONSE: " + response.getheader('Content-Type'))
+				if 'image/' in response.getheader('Content-Type') or 'images/' in response.getheader('Content-Type') or 'application/pdf' in response.getheader('Content-Type'):
+					Spider.num_graphics_files += 1
+					print("images: " + str(Spider.num_graphics_files))
+
+			
+			#check for prev. seen content
 
 			
 			finder = LinkFinder(Spider.base_url, page_url)
@@ -119,7 +130,7 @@ class Spider:
 		except Exception as e:
 			Spider.broken_links.add(page_url)
 			Spider.update_files()
-			print(str(e))
+			print("ERROR: " + str(e))
 			return set()
 		return finder.page_links()
 
@@ -138,13 +149,28 @@ class Spider:
 						if toCheck == sw_fixed:
 							break
 						elif sw == Spider.stopwords[-1]:
-							print("WRITING: " + toCheck)
+							#print("WRITING: " + toCheck)
+							toCheck = self.remove_punctuation(toCheck)
+							#print("AFTER STEMMING: " + Spider.p.stem_word(toCheck))
+							toCheck = Spider.p.stem_word(toCheck)
 							Spider.page_dict[page_url].append(toCheck)
 							out.write(toCheck + '\n')
 
 				except:
-					print("NOT A WORD!")
+					#print("NOT A WORD!")
+					pass
 	
+	#below: credit to https://github.com/jstumbaugh/web_crawler/blob/master/crawler.py
+	@classmethod
+	def remove_punctuation(self, text) :
+		"""
+		Author: Nicole
+		This method uses regex to remove the punctuation in text.
+		http://stackoverflow.com/questions/265960/best-way-to-strip-punctuation-from-a-string-in-python
+		"""
+		exclude = set(string.punctuation)
+		return ''.join(ch for ch in text if ch not in exclude)
+
 	@staticmethod
 	def add_links_to_queue(links):
 		for url in links:
@@ -172,3 +198,15 @@ class Spider:
 		set_to_file(Spider.queue, Spider.queue_file)
 		set_to_file(Spider.crawled, Spider.crawled_file)
 		set_to_file(Spider.broken_links, Spider.broken_links_file)
+
+	@classmethod
+	def getDocIDDict(self):
+		return Spider.page_dict
+
+	@classmethod
+	def checkForMatch(self, arr1, arr2):
+		if arr1 == arr2:
+			return True
+		else:
+			#TO DO: check for >99% equivalence
+			return False

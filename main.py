@@ -9,6 +9,8 @@ from general import *
 import os
 import shutil
 
+import operator
+
 PROJECT_NAME = 'IR_project'
 #HOMEPAGE = 'https://thenewboston.com/'
 HOMEPAGE = 'http://lyle.smu.edu/~fmoore/'
@@ -71,7 +73,59 @@ def crawl():
     if len(queued_links) > 0:
         print(str(len(queued_links)) + ' links in the queue')
         create_jobs()
+    else:
+        #print("DONE")
+        docIDDict = Spider.getDocIDDict()
 
+        keys_to_delete = []
+
+        for key in docIDDict:
+            if(docIDDict[key] != [] and key not in keys_to_delete):
+                for key_to_compare in docIDDict:
+                    if(key != key_to_compare and docIDDict[key] == docIDDict[key_to_compare] and key_to_compare not in keys_to_delete):
+                        print("DUPLICATE URL FOUND:")
+                        #print(key)
+                        #print(key_to_compare)
+                        keys_to_delete.append(key_to_compare)
+                        #docIDDict.pop(key_to_compare, None)
+
+        #delete duplicate keys
+        for todelete in keys_to_delete:
+            #print("DELETING: " + todelete)
+            docIDDict.pop(todelete, None)
+
+        #make dict of individual words: frequency
+        word_dict = {}
+        for key in docIDDict:
+            for word in docIDDict[key]:
+                if word in word_dict:
+                    word_dict[word] += 1
+                else:
+                    word_dict[word] = 1
+        
+        
+        #sort by term frequency in descending order
+        sorted_term_frequency = sorted(word_dict.items(), key=operator.itemgetter(1), reverse=True)
+        #print(sorted_term_frequency)
+
+        #Make a dict of term: document frequency
+        tdf = {}
+        #loop thru every word in the sorted_term_freq array
+        for k in range(len(sorted_term_frequency)):
+            #loop thru each document to see if the term_key is present
+            for document_key in docIDDict:
+                print("NEW DOC!", docIDDict[document_key])
+                #loop thru each word in the doc
+                for word in docIDDict[document_key]:
+                    if(word == sorted_term_frequency[k][0]):
+                        if sorted_term_frequency[k][0] in tdf:
+                            tdf[sorted_term_frequency[k][0]] += 1
+                        else:
+                            tdf[sorted_term_frequency[k][0]] = 1
+                        #break because we are just counting the number of DOCUMENTS that the term is found in...
+                        break
+
+        #print("TDF: " , tdf)
 
 create_workers()
 crawl()
