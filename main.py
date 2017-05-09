@@ -260,6 +260,12 @@ def crawl():
                 cos_sim['url'] = docID
                 cos_sim['title'] = Spider.getTitle(docID)
                 cos_sim['cosine_similarity_score'] = cosineSimilarity(query_t, ntdfm, docID)
+                for q in query_array:
+                    for t in cos_sim['title'].lower().split():
+                        if q == t:
+                            print("IN TITLE!")
+                            cos_sim['cosine_similarity_score'] += 0.5
+
                 query_results.append(cos_sim)
                 print(cos_sim)
 
