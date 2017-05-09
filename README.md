@@ -15,11 +15,13 @@ Install BeautifulSoup4:
 To run:
 
 Windows:
+
     py -3 main.py
 
 or
 
 Mac:
+
     python3 main.py
 
 Troubleshooting: If you receive an error similar to "ImportError: No module named bs4 in Windows" even after running the "pip install BeautifulSoup4",
