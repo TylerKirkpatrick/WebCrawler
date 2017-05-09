@@ -251,8 +251,20 @@ def crawl():
 
             #(2) Compute Cosine similarity between query and ALL docs
             
+            query_results = []
+            cos_sim = {}
+
+            print("RESULTS:")
             for docID in ntdfm:
-                print("cosine similarity for ", docID, ": ",cosineSimilarity(query_t, ntdfm, docID))
+                #print("cosine similarity for ", docID, ": ",cosineSimilarity(query_t, ntdfm, docID))
+                cos_sim['url'] = docID
+                cos_sim['title'] = Spider.getTitle(docID)
+                cos_sim['cosine_similarity_score'] = cosineSimilarity(query_t, ntdfm, docID)
+                query_results.append(cos_sim)
+                print(cos_sim)
+
+            
+                
                         
 
 def trimQuery(query):
@@ -354,13 +366,10 @@ def cosineSimilarity(doc1, doc2, docID):
     
     
 
-    print(top_sum, ", ", bottomQ, ", ", bottomD)
-
-
+    #print(top_sum, ", ", bottomQ, ", ", bottomD)
 
     #print(doc1[term_index]['tfidf'])
     
-
 
     try:
         similarity = ( top_sum / (bottomQ * bottomD) )

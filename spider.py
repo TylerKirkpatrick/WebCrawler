@@ -94,7 +94,6 @@ class Spider:
 			Spider.page_dict[page_url] = []
 
 			if 'text/html' in response.getheader('Content-Type') or 'text/htm' in response.getheader('Content-Type'):
-				print("URL: ", page_url)
 				html_bytes = response.read() # receive byte data
 				html_string = html_bytes.decode("utf-8")
 				
@@ -227,3 +226,24 @@ class Spider:
 		else:
 			#TO DO: check for >99% equivalence
 			return False
+	
+	@classmethod
+	def getTitle(self, docID):
+		html_string = ''
+		try:
+			response = urlopen(docID)
+
+			html_bytes = response.read() # receive byte data
+			html_string = html_bytes.decode("utf-8")
+			
+			#html data
+			web_soup = soup(html_string, "html.parser")
+			main_div = web_soup.find(name="p", attrs={'class': 'main-content'})
+			words = web_soup.get_text().split() 
+
+			titleTag = web_soup.html.head.title.get_text()
+
+			return titleTag
+			#words = web_soup.get_text().split() 
+		except:
+			return "default title"
