@@ -230,12 +230,16 @@ def remove_punctuation(text) :
     return ''.join(ch for ch in text if ch not in exclude)
 
 def getResults(query_array, tdfm):
+    found_at_least_one = False
     for word in query_array:
         for docURL in tdfm:
             for term in tdfm[docURL]:
                 if term == word:
+                    found_at_least_one = True
                     print("FOUND MATCH AT: ", docURL, " for a total of ", tdfm[docURL][term], " times")
-
+    
+    if(!found_at_least_one):
+        print("No results found")
 
 
 create_workers()
