@@ -4,12 +4,15 @@ try:
 except:
 	from multiprocessing import Queue
 from spider import Spider
+
 from domain import *
 from general import *
 import os
 import shutil
 
 import operator
+from stemmer import PorterStemmer
+import string
 
 PROJECT_NAME = 'IR_project'
 #HOMEPAGE = 'https://thenewboston.com/'
@@ -182,10 +185,56 @@ def crawl():
                 to_stop = 1
                 continue
             
+            query_array = trimQuery(query)
             
+            #see if any of the words are in the dictionary
             for word in word_dict:
-                if query == word:
-                    print("FOUND IT")
+                for q_word in query_array:
+                    if word == q_word:
+                        getResults(query_array, tdfm)
+
+            
+
+
+def trimQuery(query):
+    stopwordsfile = open("stopwords.txt", "r")
+    stopwords = stopwordsfile.read().split('\n')
+
+    print("before stemming: ", query)
+    stem = PorterStemmer()
+    
+    wordsArray = []
+
+    for word in query.split():
+        word = word.lower().rstrip()
+        if(word in stopwords):
+            continue
+        else:
+            word = remove_punctuation(word)
+            #print("AFTER STEMMING: " + Spider.p.stem_word(toCheck))
+            word = Spider.p.stem_word(word)
+            wordsArray.append(word)
+    
+    query = wordsArray
+    print("after stemming: ", query)
+    return query
+
+
+def remove_punctuation(text) :
+    """
+    Author: Nicole
+    This method uses regex to remove the punctuation in text.
+    http://stackoverflow.com/questions/265960/best-way-to-strip-punctuation-from-a-string-in-python
+    """
+    exclude = set(string.punctuation)
+    return ''.join(ch for ch in text if ch not in exclude)
+
+def getResults(query_array, tdfm):
+    for word in query_array:
+        for docURL in tdfm:
+            for term in tdfm[docURL]:
+                if term == word:
+                    print("FOUND MATCH AT: ", docURL, " for a total of ", tdfm[docURL][term], " times")
 
 
 
