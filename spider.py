@@ -37,6 +37,7 @@ class Spider:
 	stopwords = []
 	num_graphics_files = 0 #jpg, jpeg, png, PDF(?), gif
 	p = 0
+	tdfm = {}
 
 	page_dict = {} #keep a dictionary of page_url : [parsed words]
 
@@ -55,6 +56,7 @@ class Spider:
 		stopwordsfile = open("stopwords.txt", "r")
 		Spider.stopwords = stopwordsfile.read().split('\n')
 		Spider.p = PorterStemmer()
+		Spider.tdfm = {}
 
 		self.boot()
 		self.crawl_page('First spider', Spider.base_url)
@@ -139,6 +141,8 @@ class Spider:
 
 	@classmethod
 	def addToDict(self, page_url, data, filename):
+		if(page_url not in Spider.tdfm):
+			Spider.tdfm[page_url] = {}
 		with open(filename, 'a') as out:
 			for word in data:
 				#print(word)
@@ -158,6 +162,10 @@ class Spider:
 							toCheck = Spider.p.stem_word(toCheck)
 							Spider.page_dict[page_url].append(toCheck)
 							out.write(toCheck + '\n')
+							if(toCheck not in Spider.tdfm[page_url]):
+								Spider.tdfm[page_url][toCheck] = 1
+							else:
+								Spider.tdfm[page_url][toCheck] += 1
 
 				except:
 					#print("NOT A WORD!")

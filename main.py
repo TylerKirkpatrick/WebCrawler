@@ -141,6 +141,7 @@ def crawl():
 
         #print(sorted_tdf)
         
+        '''
         counter = 0
         for i in sorted_tdf:
             if counter < 20:
@@ -148,7 +149,26 @@ def crawl():
                 counter += 1
             else:
                 break
+        '''
 
+        #array of ALL words!
+        dict_all_words = []
+        for word in word_dict:
+            if word not in dict_all_words:
+                dict_all_words.append(word)
+
+        #print("ALLWORDS: ", len(dict_all_words ))
+
+        #term-document frequency matrix
+        tdfm = Spider.tdfm
+        
+        '''
+        for doc in tdfm:
+            print(doc, ": ", tdfm[doc])
+            print("\n")
+        '''
+        
+        
         #NOW FOR QUERY
         to_stop = 0
 
