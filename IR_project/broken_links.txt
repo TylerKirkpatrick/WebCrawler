@@ -1,4 +1,5 @@
 http://lyle.smu.edu/~fmoore/bayes.js
+http://lyle.smu.edu/~fmoore/building.txt
 http://lyle.smu.edu/~fmoore/does_not_exist.htm
 http://lyle.smu.edu/~fmoore/excel-icon.jpg
 http://lyle.smu.edu/~fmoore/magictext.html

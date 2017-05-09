@@ -13,6 +13,7 @@ import shutil
 import operator
 from stemmer import PorterStemmer
 import string
+import math
 
 PROJECT_NAME = 'IR_project'
 #HOMEPAGE = 'https://thenewboston.com/'
@@ -170,8 +171,19 @@ def crawl():
             print(doc, ": ", tdfm[doc])
             print("\n")
         '''
-        
-        
+
+        #
+        #NORMALIZED term-document frequency matrix
+        ntdfm = normalize(tdfm)
+
+        #get Inverse Document Frequency (maps terms: IDF)
+        term_IDF_dict = {}
+        #print("num docs: ", len(ntdfm))  
+        for word in word_dict:
+            term_IDF_dict[word] = inverseDocumentFrequency(word, ntdfm)
+            #print(word, ": ", term_IDF_dict[word])
+                
+        #
         #NOW FOR QUERY
         to_stop = 0
 
@@ -187,14 +199,61 @@ def crawl():
             
             query_array = trimQuery(query)
             
+            '''
             #see if any of the words are in the dictionary
+            found_at_least_one = False
             for word in word_dict:
                 for q_word in query_array:
                     if word == q_word:
-                        getResults(query_array, tdfm)
+                        getResults(q_word, tdfm)
+                        found_at_least_one = True
+            
+            if(found_at_least_one == False):
+                print("No results found :(")
+            '''
+
+            #
+            #nTF * IDF
+            query_ntfIDF_dict = {}
+            #first populate:
+            for term in query_array:
+                query_ntfIDF_dict[term] = {}
+                #then compute ntf * idf for each term
+                #1. find normalized tf score
+                tf_score = 0
+                for docID in ntdfm:
+                    query_ntfIDF_dict[term][docID] = 0 #default value
+                    if term in ntdfm[docID]:
+                        tf_score = ntdfm[docID][term]
+                        query_ntfIDF_dict[term][docID] = tf_score * term_IDF_dict[term]
+                        #print("ntfidf for ,", term , " at ", docID,": ", query_ntfIDF_dict[term][docID])
+                
+            #
+            #Cosine similarity
 
             
+            #(4.a?) Find TF, IDF and TF * IDF of query
+            
+            query_t = {}
+            for q in query_array:
+                query_t[q] = {}
+                query_t[q]['tf'] = {}
+                query_t[q]['idf'] = {}
+                query_t[q]['tfidf'] = {}
+                query_t[q]['tf'] = 1/len(query_array)
+                try:
+                    query_t[q]['idf'] = term_IDF_dict[q]
+                except:
+                    query_t[q]['idf'] = 0
 
+                query_t[q]['tfidf'] = query_t[q]['tf'] * query_t[q]['idf']
+                #print(query_t[q]['tf'], " x ", query_t[q]['idf'], " = ", query_t[q]['tfidf'])
+
+            #(2) Compute Cosine similarity between query and ALL docs
+            
+            for docID in ntdfm:
+                print("cosine similarity for ", docID, ": ",cosineSimilarity(query_t, ntdfm, docID))
+                        
 
 def trimQuery(query):
     stopwordsfile = open("stopwords.txt", "r")
@@ -229,18 +288,101 @@ def remove_punctuation(text) :
     exclude = set(string.punctuation)
     return ''.join(ch for ch in text if ch not in exclude)
 
-def getResults(query_array, tdfm):
-    found_at_least_one = False
-    for word in query_array:
-        for docURL in tdfm:
-            for term in tdfm[docURL]:
-                if term == word:
-                    found_at_least_one = True
-                    print("FOUND MATCH AT: ", docURL, " for a total of ", tdfm[docURL][term], " times")
+def getResults(word, tdfm):
+    for docURL in tdfm:
+        for term in tdfm[docURL]:
+            if term == word:
+                print("FOUND ",  word, " AT: ", docURL, " for a total of ", tdfm[docURL][term], " times")
     
-    if(!found_at_least_one):
-        print("No results found")
+def normalize(tdfm):
+    for docID in tdfm:
+        counter = 0
+        #get count of all the terms in the doc
+        for term in tdfm[docID]:
+            counter += tdfm[docID][term]
+        #done going through all docs, now go thru them again and reassign scores
+        for term in tdfm[docID]:
+            tdfm[docID][term] = tdfm[docID][term]/counter
+            #print("new score: ", tdfm[docID][term])
+    return tdfm
 
+def numDocsWordIsIn(term, allDocuments):
+    sum = 0
+    for doc in allDocuments:
+        if term in allDocuments[doc]:
+            sum += 1
+
+    return sum
+
+#below function: credit to https://janav.wordpress.com/2013/10/27/tf-idf-and-cosine-similarity/
+def inverseDocumentFrequency(term, allDocuments):
+    numDocumentsWithThisTerm = 0
+    for doc in allDocuments:
+        if term in allDocuments[doc]:
+            numDocumentsWithThisTerm = numDocumentsWithThisTerm + 1
+
+    if numDocumentsWithThisTerm > 0:
+        #return 1.0 + math.log(float(len(allDocuments)) / numDocumentsWithThisTerm)
+        return math.log(len(allDocuments) / (1 + numDocsWordIsIn(term, allDocuments)))
+    else:
+        return 1.0
+
+def cosineSimilarity(doc1, doc2, docID):
+    # cosine similarity:
+    #top / bottom
+    # top = d1[0] * d2[0] + d1[1] * d2[1]...
+    # bottom = ( sqrt(d1[0]^2 + d1[1]^2 +...) * sqrt(sqrt(d2[0]^2 + d2[1]^2 +...) )
+
+    num_reps = len(doc1)
+    doc1_to_square = 0
+    doc2_to_square = 0
+    top_sum = 0
+
+    for term_index in doc1:
+        #print("TERM INDEX: ", term_index)
+        try:
+            top_sum += ( doc1[term_index]['tfidf'] * doc2[docID][term_index])
+            doc1_to_square += (doc1[term_index]['tfidf'] * doc1[term_index]['tfidf'])
+            doc2_to_square += (doc2[docID][term_index] * doc2[docID][term_index])
+
+            bottomQ = math.sqrt(doc1_to_square)
+            bottomD = math.sqrt(doc2_to_square)
+        except:
+            bottomQ = 0
+            bottomD = 0
+
+    
+    
+
+    print(top_sum, ", ", bottomQ, ", ", bottomD)
+
+
+
+    #print(doc1[term_index]['tfidf'])
+    
+
+
+    try:
+        similarity = ( top_sum / (bottomQ * bottomD) )
+        if similarity == 0:
+            return 0
+        else:
+            return similarity
+    
+    except:
+        return 0
+
+    
+
+
+    
+    '''
+    for q in doc1:
+        for docID_temp in doc1[q]:
+            if docID_temp == docID:
+                print("    ", doc1[q][docID_temp])
+                print("")
+    '''
 
 create_workers()
 crawl()
